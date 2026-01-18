@@ -1,3 +1,4 @@
+#[repr(C)]
 #[derive(Debug)]
 pub struct TelemetryEntry {
     pub uuid: uuid::Uuid,
@@ -8,11 +9,13 @@ pub struct TelemetryEntry {
     pub time: i64,
 }
 
+#[repr(C)]
 #[derive(Debug)]
 pub enum NtFunction {
     NtOpenProcess,
 }
 
+#[repr(C)]
 #[derive(Debug, Default)]
 pub struct Args {
     pub rcx: Option<usize>,

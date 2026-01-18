@@ -17,8 +17,10 @@ macro_rules! CTL_CODE {
     };
 }
 
-pub const IOCTL_POLL_QUE_LOG: u32 =
+/// Drains the snapshotted messages from the SCIL signals
+pub const IOCTL_DRAIN_LOG_SNAPSHOT: u32 =
     CTL_CODE!(FILE_DEVICE_UNKNOWN, 0x800, METHOD_BUFFERED, FILE_ANY_ACCESS);
 
-pub const DISABLE_ALT_SYSCALLS: u32 =
+/// Snapshots the current queue, returning the count of queued items
+pub const IOCTL_SNAPSHOT_QUE_LOG: u32 =
     CTL_CODE!(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS);
