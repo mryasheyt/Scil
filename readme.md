@@ -10,7 +10,7 @@ only particular System Service Numbers to hook.
 
 Demo of logging syscalls:
 
-<video controls src="img/preview_1.mp4" title="System Call Integrity Layer logging demo"></video>
+<video controls src="img/preview_1.gif" title="System Call Integrity Layer logging demo"></video>
 
 ## Architecture
 
