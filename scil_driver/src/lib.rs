@@ -5,6 +5,7 @@ extern crate alloc;
 use core::{iter::once, ptr::null_mut};
 
 use alloc::vec::Vec;
+use shared::{DOS_DEVICE_NAME, NT_DEVICE_NAME};
 use wdk::{nt_success, println};
 use wdk_mutex::grt::Grt;
 use wdk_sys::{
@@ -40,9 +41,6 @@ use crate::{
 #[cfg(not(test))]
 #[global_allocator]
 static GLOBAL_ALLOCATOR: WdkAllocator = WdkAllocator;
-
-pub static NT_DEVICE_NAME: &str = "\\Device\\ScilDriver";
-pub static DOS_DEVICE_NAME: &str = "\\??\\ScilDriver";
 
 #[unsafe(export_name = "DriverEntry")]
 pub unsafe extern "system" fn driver_entry(

@@ -3,6 +3,7 @@
 use core::{arch::asm, ffi::c_void, ptr::null_mut};
 
 use alloc::{boxed::Box, vec::Vec};
+use shared::telemetry::{Args, NtFunction, TelemetryEntry};
 use wdk::println;
 use wdk_sys::{
     _KTRAP_FRAME,
@@ -17,7 +18,7 @@ use wdk_sys::{
 
 use crate::{
     ffi::{ZwGetNextProcess, ZwGetNextThread},
-    scil_telemetry::{Args, NtFunction, TelemetryCache, TelemetryEntry},
+    scil_telemetry::{TelemetryCache, TelemetryEntryOrphan},
     utils::{
         DriverError, get_module_base_and_sz, get_process_name_and_pid,
         scan_module_for_byte_pattern, thread_to_process_name,
