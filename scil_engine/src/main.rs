@@ -4,13 +4,16 @@ use shared::DRIVER_NAME;
 use windows::{
     Win32::{
         Foundation::{GENERIC_ALL, HANDLE},
-        Storage::FileSystem::{CreateFileW, FILE_ATTRIBUTE_SYSTEM, FILE_SHARE_NONE, OPEN_EXISTING},
+        Storage::FileSystem::{
+            CreateFileW, FILE_ATTRIBUTE_SYSTEM, FILE_FLAG_OVERLAPPED, FILE_SHARE_NONE,
+            OPEN_EXISTING,
+        },
         System::Threading::Sleep,
     },
     core::PCWSTR,
 };
 
-use crate::ioctl::drain_driver_messages;
+use crate::ioctl::{drain_driver_messages, overlapped};
 
 mod ioctl;
 
@@ -21,6 +24,8 @@ fn main() {
 
 fn run_engine() {
     let device = get_driver_handle_or_panic();
+
+    overlapped(device);
 
     loop {
         let data = drain_driver_messages(device, None, None);
@@ -42,7 +47,7 @@ fn get_driver_handle_or_panic() -> HANDLE {
             FILE_SHARE_NONE,
             None,
             OPEN_EXISTING,
-            FILE_ATTRIBUTE_SYSTEM,
+            FILE_ATTRIBUTE_SYSTEM | FILE_FLAG_OVERLAPPED,
             None,
         ) {
             Ok(h) => h,

@@ -1,7 +1,49 @@
 use std::ffi::c_void;
 
-use shared::{IOCTL_DRAIN_LOG_SNAPSHOT, IOCTL_SNAPSHOT_QUE_LOG, telemetry::TelemetryEntry};
-use windows::Win32::{Foundation::HANDLE, System::IO::DeviceIoControl};
+use shared::{
+    telemetry::{Args, TelemetryEntry},
+    AWAIT_PSO, IOCTL_DRAIN_LOG_SNAPSHOT, IOCTL_SNAPSHOT_QUE_LOG,
+};
+use windows::{
+    core::HRESULT,
+    Win32::{
+        Foundation::{ERROR_IO_PENDING, HANDLE},
+        System::IO::{DeviceIoControl, OVERLAPPED},
+    },
+};
+
+pub fn overlapped(device: HANDLE) {
+    let mut args_out = Args::default();
+    let mut overlapped: OVERLAPPED = OVERLAPPED::default();
+
+    let status = unsafe {
+        DeviceIoControl(
+            device,
+            AWAIT_PSO,
+            None,
+            0,
+            Some(&mut args_out as *mut _ as _),
+            size_of::<Args>() as u32,
+            None,
+            Some(&mut overlapped),
+        )
+    };
+
+    match status {
+        Ok(()) => {
+            println!("[i] IOCTL completed immediately");
+        }
+        Err(e) => {
+            let code: HRESULT = e.code();
+
+            if code == ERROR_IO_PENDING.to_hresult() {
+                println!("[+] IRP queued (overlapped): ERROR_IO_PENDING");
+            } else {
+                println!("[-] DeviceIoControl failed: {e:?}");
+            }
+        }
+    }
+}
 
 /// Makes an IOCTL to drain the driver messages. If no buffer is taken by this function, then
 /// the function calls to get the count.

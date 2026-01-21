@@ -8,7 +8,9 @@
     "cSpell.words": [
         "eprocess",
         "Flink",
+        "Irps",
         "Irql",
+        "KIRQL",
         "KTHREAD",
         "KTRAP",
         "ntddk",
@@ -19,7 +21,9 @@
         "PIRP",
         "PULONG",
         "PUNICODE",
+        "repr",
         "serde",
-        "snapshtted"
+        "snapshtted",
+        "Uninit"
     ]
 }

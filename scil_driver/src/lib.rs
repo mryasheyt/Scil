@@ -3,24 +3,30 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-use core::{iter::once, ptr::null_mut, sync::atomic::AtomicPtr};
+use core::{
+    iter::once,
+    ptr::null_mut,
+    sync::atomic::{AtomicI32, AtomicPtr},
+};
 use shared::{DOS_DEVICE_NAME, NT_DEVICE_NAME};
 use wdk::{nt_success, println};
 use wdk_mutex::{fast_mutex::FastMutex, grt::Grt};
 use wdk_sys::{
     DEVICE_OBJECT, DO_BUFFERED_IO, DRIVER_OBJECT, FILE_DEVICE_SECURE_OPEN, FILE_DEVICE_UNKNOWN,
-    IO_NO_INCREMENT, IRP_MJ_CLOSE, IRP_MJ_CREATE, IRP_MJ_DEVICE_CONTROL, NTSTATUS,
-    PCUNICODE_STRING, PDEVICE_OBJECT, PIRP, PUNICODE_STRING, STATUS_SUCCESS, STATUS_UNSUCCESSFUL,
-    UNICODE_STRING,
+    IO_CSQ, IO_NO_INCREMENT, IRP_MJ_CLOSE, IRP_MJ_CREATE, IRP_MJ_DEVICE_CONTROL, KSPIN_LOCK,
+    LIST_ENTRY, NTSTATUS, PCUNICODE_STRING, PDEVICE_OBJECT, PIRP, PLIST_ENTRY, PUNICODE_STRING,
+    STATUS_SUCCESS, STATUS_UNSUCCESSFUL, UNICODE_STRING,
     ntddk::{
-        IoCreateDevice, IoCreateSymbolicLink, IoDeleteDevice, IoDeleteSymbolicLink,
-        IofCompleteRequest, PsRemoveCreateThreadNotifyRoutine, PsRemoveLoadImageNotifyRoutine,
+        IoCreateDevice, IoCreateSymbolicLink, IoCsqInitializeEx, IoDeleteDevice,
+        IoDeleteSymbolicLink, IofCompleteRequest, KeInitializeSpinLock,
+        PsRemoveCreateThreadNotifyRoutine, PsRemoveLoadImageNotifyRoutine,
         PsSetCreateThreadNotifyRoutine, PsSetLoadImageNotifyRoutine, RtlInitUnicodeString,
     },
 };
 
 mod alt_syscalls;
 mod callbacks;
+mod csq;
 mod ffi;
 mod ioctl;
 mod scil_telemetry;
@@ -35,7 +41,11 @@ use wdk_alloc::WdkAllocator;
 use crate::{
     alt_syscalls::AltSyscalls,
     callbacks::{image_load_callback, thread_callback},
-    ioctl::{drop_pirp_queue, handle_ioctl, init_pirp_queue},
+    csq::{
+        CsqAcquireLock, CsqCompleteCanceledIrp, CsqInsertIrp, CsqPeekNextIrp, CsqReleaseLock,
+        CsqRemoveIrp,
+    },
+    ioctl::handle_ioctl,
     scil_telemetry::TelemetryCache,
 };
 
@@ -43,9 +53,18 @@ use crate::{
 #[global_allocator]
 static GLOBAL_ALLOCATOR: WdkAllocator = WdkAllocator;
 
-pub type PsoQueue = Vec<PIRP>;
-// TODO will be more performant to use the PIRP linked lists but this is less effort for now
-pub static G_PSO_IOCTL_QUEUE: AtomicPtr<FastMutex<PsoQueue>> = AtomicPtr::new(null_mut());
+#[repr(C)]
+// Layout taken from https://github.com/OmarShehata11/MySoundDriver/blob/master/MySoundDriver/Header.h
+pub struct ScilDriverExtension {
+    /// List for our queue of the Irp, it's the List entry point (Head)
+    pub irp_queue_list: LIST_ENTRY,
+    /// Structure for Cancel-safe queue to specify the IRP queue routines
+    pub cancel_safe_queue: IO_CSQ,
+    /// Spin lock for locking the Csq
+    pub csq_lock: KSPIN_LOCK,
+    /// Number of Irps in the queue in pending state
+    pub num_queued_irps: AtomicI32,
+}
 
 #[unsafe(export_name = "DriverEntry")]
 pub unsafe extern "system" fn driver_entry(
@@ -70,13 +89,6 @@ pub unsafe extern "system" fn driver_entry(
     // Set up wdk-mutex
     if let Err(e) = Grt::init() {
         println!("Error creating Grt!: {:?}", e);
-        return STATUS_UNSUCCESSFUL;
-    }
-
-    // Set up the PIRP queue for fast IOCTL dispatch with syscall events
-    if let Err(e) = init_pirp_queue() {
-        println!("Failed to create FastMutex for init_pirp_queue(). {e:?}");
-        driver_exit(driver);
         return STATUS_UNSUCCESSFUL;
     }
 
@@ -112,7 +124,6 @@ extern "C" fn driver_exit(driver: *mut DRIVER_OBJECT) {
     // Destroy driver internals
     //
 
-    drop_pirp_queue();
     let _ = unsafe { Grt::destroy() };
     AltSyscalls::uninstall();
     let _ = unsafe { PsRemoveLoadImageNotifyRoutine(Some(image_load_callback)) };
@@ -160,7 +171,7 @@ pub unsafe extern "C" fn configure_driver(
     let res = unsafe {
         IoCreateDevice(
             driver,
-            0,
+            size_of::<ScilDriverExtension>() as u32,
             &mut nt_name,
             FILE_DEVICE_UNKNOWN, // If a type of hardware does not match any of the defined types, specify a value of either FILE_DEVICE_UNKNOWN
             FILE_DEVICE_SECURE_OPEN,
@@ -172,6 +183,31 @@ pub unsafe extern "C" fn configure_driver(
         println!("[scil] [-] Unable to create device via IoCreateDevice. Failed with code: {res}.");
         driver_exit(driver); // cleanup any resources before returning
         return res;
+    }
+
+    //
+    // Initialise the device extension for the Csq
+    //
+    unsafe {
+        let p_device_ext = (*device_object).DeviceExtension as *mut ScilDriverExtension;
+
+        InitializeListHead(&raw mut (*p_device_ext).irp_queue_list);
+        KeInitializeSpinLock(&raw mut (*p_device_ext).csq_lock);
+
+        let result = IoCsqInitializeEx(
+            &raw mut (*p_device_ext).cancel_safe_queue,
+            Some(CsqInsertIrp),
+            Some(CsqRemoveIrp),
+            Some(CsqPeekNextIrp),
+            Some(CsqAcquireLock),
+            Some(CsqReleaseLock),
+            Some(CsqCompleteCanceledIrp),
+        );
+
+        if !nt_success(result) {
+            println!("[scil] [-] Failed to initialise Csq. {result:#X}");
+            return result;
+        }
     }
 
     //
@@ -207,4 +243,13 @@ unsafe extern "C" fn scil_create_close(_device: *mut DEVICE_OBJECT, pirp: PIRP) 
     }
 
     STATUS_SUCCESS
+}
+
+#[inline(always)]
+#[allow(non_snake_case)]
+unsafe fn InitializeListHead(p_le: PLIST_ENTRY) {
+    unsafe {
+        (*p_le).Flink = p_le;
+        (*p_le).Blink = p_le;
+    }
 }
