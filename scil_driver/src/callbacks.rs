@@ -7,7 +7,7 @@ use wdk_sys::{
 };
 
 use crate::{
-    alt_syscalls::{AltSyscallStatus, AltSyscalls},
+    alt_syscall_utils::{AltSyscallStatus, AltSyscalls},
     utils::thread_to_process_name,
 };
 

@@ -25,6 +25,7 @@ use wdk_sys::{
     },
 };
 
+mod alt_syscall_utils;
 mod alt_syscalls;
 mod callbacks;
 mod csil_api;
@@ -41,7 +42,7 @@ extern crate wdk_panic;
 use wdk_alloc::WdkAllocator;
 
 use crate::{
-    alt_syscalls::AltSyscalls,
+    alt_syscall_utils::AltSyscalls,
     callbacks::{image_load_callback, thread_callback},
     csq::{
         CsqAcquireLock, CsqCompleteCanceledIrp, CsqInsertIrp, CsqPeekNextIrp, CsqReleaseLock,
