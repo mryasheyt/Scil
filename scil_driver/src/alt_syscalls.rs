@@ -2,28 +2,10 @@
 
 use core::{arch::asm, ffi::c_void, ptr::null_mut};
 
-use alloc::{boxed::Box, vec::Vec};
-use shared::telemetry::{Args, NtFunction, TelemetryEntry};
 use wdk::println;
-use wdk_sys::{
-    _KTRAP_FRAME,
-    _MODE::KernelMode,
-    DISPATCHER_HEADER, DRIVER_OBJECT, HANDLE, KTRAP_FRAME, OBJ_KERNEL_HANDLE, PETHREAD, PKTHREAD,
-    PROCESS_ALL_ACCESS, PsThreadType, THREAD_ALL_ACCESS,
-    ntddk::{
-        IoCsqRemoveNextIrp, IoGetCurrentProcess, IoThreadToProcess, ObReferenceObjectByHandle,
-        ObfDereferenceObject, ZwClose,
-    },
-};
+use wdk_sys::{_KTRAP_FRAME, KTRAP_FRAME};
 
-use crate::{
-    ffi::{ZwGetNextProcess, ZwGetNextThread},
-    scil_telemetry::{TelemetryCache, TelemetryEntryOrphan},
-    utils::{
-        DriverError, get_module_base_and_sz, get_process_name_and_pid,
-        scan_module_for_byte_pattern, thread_to_process_name,
-    },
-};
+use crate::utils::get_process_name_and_pid;
 
 pub const SSN_NT_OPEN_PROCESS: u32 = 0x26;
 pub const SSN_NT_ALLOCATE_VIRTUAL_MEMORY: u32 = 0x18;
