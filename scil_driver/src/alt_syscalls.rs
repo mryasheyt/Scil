@@ -68,15 +68,11 @@ pub unsafe extern "system" fn syscall_handler(
         }
     };
 
-    println!("SSN: {ssn:#X}");
-
     match ssn {
         SSN_NT_OPEN_PROCESS
         | SSN_NT_ALLOCATE_VIRTUAL_MEMORY
         | SSN_NT_WRITE_VM
         | SSN_NT_CREATE_THREAD_EX => {
-            println!("ALLOW - ********** SSN: {ssn:#X}");
-
             let Some(nt_fn) = ssn_to_nt_function(ssn) else {
                 return SYSCALL_ALLOW;
             };
