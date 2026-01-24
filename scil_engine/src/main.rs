@@ -1,19 +1,20 @@
-use std::{collections::VecDeque, iter::once};
+use std::{collections::VecDeque, ffi::CStr, iter::once};
 
 use shared::{
     DRIVER_NAME,
-    telemetry::{EdrResult, SyscallAllowed, TelemetryEntry},
+    telemetry::{EdrResult, NtFunction, SyscallAllowed, TelemetryEntry},
 };
 use windows::{
     Win32::{
-        Foundation::{CloseHandle, GENERIC_ALL, HANDLE, WAIT_OBJECT_0},
+        Foundation::{CloseHandle, GENERIC_ALL, HANDLE, MAX_PATH, WAIT_OBJECT_0},
         Storage::FileSystem::{
             CreateFileW, FILE_ATTRIBUTE_SYSTEM, FILE_FLAG_OVERLAPPED, FILE_SHARE_NONE,
             OPEN_EXISTING,
         },
         System::{
             IO::GetOverlappedResult,
-            Threading::{Sleep, WaitForSingleObject},
+            ProcessStatus::GetModuleFileNameExA,
+            Threading::{OpenProcess, PROCESS_ALL_ACCESS, Sleep, WaitForSingleObject},
         },
     },
     core::PCWSTR,
@@ -42,10 +43,8 @@ fn run_engine() {
 
     println!("[+] IOCTL pending buffers queued.");
 
-    // TODO put on new thread, maybe a tokio select thereafter?
     let _ = monitor_driver_intercept(device, &mut queued_events);
 
-    // TODO put on new thread, maybe a tokio select thereafter?
     loop {
         let data = drain_driver_messages(device, None, None);
         if let Some(data) = data {
@@ -109,6 +108,24 @@ fn monitor_driver_intercept(
             taken.out.pid, taken.out.nt_function, taken.out.uuid
         );
 
+        match taken.out.nt_function {
+            NtFunction::NtOpenProcess(pid) => {
+                if pid != 0 {
+                    println!("[i] Hooked process is trying to open pid: {pid}");
+                    if let Ok(p_handle) = unsafe { OpenProcess(PROCESS_ALL_ACCESS, false, pid) } {
+                        let mut buf = [0u8; MAX_PATH as usize];
+                        unsafe { GetModuleFileNameExA(Some(p_handle), None, &mut buf) };
+                        let s = CStr::from_bytes_until_nul(&buf).unwrap();
+                        println!(
+                            "[i] Process was trying to open process image: {}",
+                            s.to_str().unwrap()
+                        );
+                    }
+                }
+            }
+            _ => (),
+        }
+
         println!("[i] Sending result to driver to release syscall.");
         let result = EdrResult {
             uuid: taken.out.uuid,
@@ -117,11 +134,6 @@ fn monitor_driver_intercept(
         send_result_ioctl(device, result);
 
         completed.push(taken.out);
-
-        //
-        // TODO now we need to push another pending ioctl into the driver; except maybe we want to do this immediately
-        // after we pass the wait check for sp33d
-        //
     }
 
     Ok(completed)

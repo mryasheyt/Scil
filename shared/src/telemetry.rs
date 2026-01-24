@@ -16,8 +16,8 @@ pub struct TelemetryEntry {
 #[repr(C)]
 #[derive(Debug, Default)]
 pub enum NtFunction {
+    NtOpenProcess(u32),
     #[default]
-    NtOpenProcess,
     NtAllocateVM,
     NtCreateThreadEx,
     NtWriteVM,
@@ -46,7 +46,7 @@ pub const SSN_NT_WRITE_VM: u32 = 0x003a;
 
 pub fn ssn_to_nt_function(ssn: u32) -> Option<NtFunction> {
     match ssn {
-        SSN_NT_OPEN_PROCESS => Some(NtFunction::NtOpenProcess),
+        SSN_NT_OPEN_PROCESS => Some(NtFunction::NtOpenProcess(0)),
         SSN_NT_ALLOCATE_VIRTUAL_MEMORY => Some(NtFunction::NtAllocateVM),
         SSN_NT_CREATE_THREAD_EX => Some(NtFunction::NtCreateThreadEx),
         SSN_NT_WRITE_VM => Some(NtFunction::NtWriteVM),

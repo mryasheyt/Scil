@@ -9,7 +9,7 @@ use core::{
 
 use alloc::{boxed::Box, collections::btree_map::BTreeMap};
 use shared::telemetry::{
-    Args, SSN_NT_ALLOCATE_VIRTUAL_MEMORY, SSN_NT_CREATE_THREAD_EX, SSN_NT_OPEN_PROCESS,
+    Args, NtFunction, SSN_NT_ALLOCATE_VIRTUAL_MEMORY, SSN_NT_CREATE_THREAD_EX, SSN_NT_OPEN_PROCESS,
     SSN_NT_WRITE_VM, TelemetryEntry, ssn_to_nt_function,
 };
 use uuid::Uuid;
@@ -20,8 +20,8 @@ use wdk_sys::{
     _KTRAP_FRAME,
     _KWAIT_REASON::Executive,
     _MODE::KernelMode,
-    DISPATCH_LEVEL, FALSE, IO_NO_INCREMENT, KEVENT, KTRAP_FRAME, LARGE_INTEGER, STATUS_SUCCESS,
-    TRUE,
+    CLIENT_ID, DISPATCH_LEVEL, FALSE, IO_NO_INCREMENT, KEVENT, KTRAP_FRAME, LARGE_INTEGER,
+    STATUS_SUCCESS, TRUE,
     ntddk::{
         IoCsqRemoveNextIrp, IofCompleteRequest, KeDelayExecutionThread, KeGetCurrentIrql,
         KeInitializeEvent, KeSetEvent, KeWaitForSingleObject, RtlCopyMemoryNonTemporal,
@@ -156,6 +156,20 @@ pub unsafe extern "system" fn syscall_handler(
         | SSN_NT_CREATE_THREAD_EX => {
             let Some(nt_fn) = ssn_to_nt_function(ssn) else {
                 return SYSCALL_ALLOW;
+            };
+
+            let nt_fn = if ssn == SSN_NT_OPEN_PROCESS {
+                let p_client_id = ktrap_frame.R9 as *const CLIENT_ID;
+                if !p_client_id.is_null() {
+                    unsafe {
+                        let ci = *p_client_id;
+                        NtFunction::NtOpenProcess(ci.UniqueProcess as u32)
+                    }
+                } else {
+                    NtFunction::NtOpenProcess(0)
+                }
+            } else {
+                nt_fn
             };
 
             let p_scil_object = SCIL_DRIVER_EXT.load(Ordering::SeqCst);
